@@ -137,7 +137,7 @@
                     if (obj.event === 'download') {
                         window.open(`/downloadLocal/${data.name}`)
                     } else if (obj.event === 'watch') {
-                        window.open(`/watch?name=${data.name}`)
+                        window.open(`/watch/${data.name}`)
                     }
                 })
             }
@@ -152,6 +152,7 @@
                     elem: '#table_list'
                     , height: 312
                     , url: '/list'
+                    ,method: 'post'
                     , where: {url: url}
                     , response: {
                         statusName: 'statusCode' //规定数据状态的字段名称，默认：code
@@ -181,7 +182,7 @@
                     let loadIndex = layer.load()
                     if (obj.event === 'predownload') {
                         $.ajax({
-                            type: 'GET',
+                            type: 'POST',
                             url: '/predownload',
                             data: {
                                 url: $('#hidden_url').val(),

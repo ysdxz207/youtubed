@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title><%= name %></title>
+    <link href="https://cdn.jsdelivr.net/npm/plyr@3.4.6/dist/plyr.css" rel="stylesheet"/>
+
+    <script src="https://cdn.jsdelivr.net/npm/plyr@3.4.6/dist/plyr.min.js"></script>
+    <style>
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #player {
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+<video id="player" playsinline controls>
+    <source src="<%= url %>" type="video/mp4">
+</video>
+</body>
+<script>
+    const player = new Plyr('#player')
+</script>
+</html>

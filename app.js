@@ -5,12 +5,14 @@ const router = new Router();
 const { execSync, spawn } = require('child_process')
 const views = require('koa-views')
 const send = require('koa-send')
+const koaBody = require('koa-body')
 const path = require('path')
 const fs = require('fs')
 
 let FILE_PATH = '/app/video/videos/'
 let FILE_DOWNLOADING_CACHE = '/app/video/videos/downloading.cache'
 
+app.use(koaBody())
 
 app.use(views(path.join(__dirname, './views'), {
     extension: 'ejs'
@@ -49,14 +51,18 @@ router.get('/downloadLocal/:name', async (ctx, next) => {
     await send(ctx, filename)
 })
 
-router.get('/watch', async (ctx, next) => {
-    let filename = `/video/${ctx.request.query.name}`
-    ctx.body = `<style>html,body{margin: 0;padding:0}video{width: 100%;height:100%;}</style><video src="${filename}" controls="controls"></video>`
+router.get('/watch/:name', async (ctx, next) => {
+    let filename = `${ctx.params.name}`
+    let filepath = `/video/${filename}`
+    await ctx.render('watch', {
+        name: `${filename}`,
+        url: filepath
+    })
 })
 
-router.get('/list', async (ctx, next) => {
+router.post('/list', async (ctx, next) => {
     let result = {}
-    let execCommand = `youtube-dl -F ${ctx.request.query.url}`
+    let execCommand = `youtube-dl -F ${ctx.request.body.url}`
     console.log(`exec command:${execCommand}`)
     let stdout
     try {
@@ -75,11 +81,11 @@ router.get('/list', async (ctx, next) => {
 })
 
 
-router.get('/predownload', async (ctx, next) => {
+router.post('/predownload', async (ctx, next) => {
     let result = {}
-    let num = ctx.request.query.num
-    let url = ctx.request.query.url
-    let resolution = ctx.request.query.resolution
+    let num = ctx.request.body.num
+    let url = ctx.request.body.url
+    let resolution = ctx.request.body.resolution
     try {
         result.statusCode = 200
         let filenameTemp = '%(title)s_' + resolution + '.%(ext)s'

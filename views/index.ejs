@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>youtub下载器</title>
+    <link href="https://cdn.jsdelivr.net/gh/sentsin/layui@2.4.5/dist/css/layui.css" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/gh/sentsin/layui@2.4.5/dist/layui.js"></script>
+
+    <style>
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            flex-flow: column;
+        }
+
+        .header {
+            width: 90%;
+            margin: 0 auto;
+            height: 40px;
+            line-height: 40px;
+            color: #787878;
+            font-size: 28px;
+            font-weight: bold;
+            text-align: center;
+            border-bottom: 1px solid #DFDFDF;
+        }
+
+        .main {
+            width: 90%;
+            height: 100%;
+            margin: 10px auto;
+            display: flex;
+            flex-flow: row;
+        }
+
+        .layui-layer-error {
+            min-width: 400px;
+            min-height: 200px;
+        }
+
+        .layui-layer-error .layui-layer-content {
+            padding: 8px;
+        }
+
+        .layui-layer-error .layui-layer-title {
+            border: none;
+            background-color: #ff3a26;
+            color: #fff;
+        }
+
+        .layui-table, .layui-table-view {
+            margin: 0;
+        }
+
+        .left {
+            flex: 1;
+        }
+        .right {
+            flex: 1;
+            margin-left: 10px;
+            min-width: 55%;
+        }
+    </style>
+</head>
+<body>
+<div class="header">youtube下载器</div>
+<div class="main">
+    <div class="left">
+        <div class="layui-col-xs12">
+            <input type="hidden" id="hidden_url"/>
+            <div class="layui-form-item">
+                <div class="layui-inline layui-col-xs12">
+                    <div class="layui-col-xs8">
+                        <input type="text" class="layui-input" id="input_url"/>
+                    </div>
+                    <button type="button" id="btn_list" class="layui-btn layui-btn-warm layui-col-xs4">获取下载列表</button>
+                </div>
+            </div>
+        </div>
+        <div class="layui-col-xs12">
+            <table id="table_list" lay-filter="table_list_filter"></table>
+        </div>
+    </div>
+    <div class="right">
+        <table id="table_list_download" lay-filter="table_list_download_filter"></table>
+    </div>
+</div>
+</body>
+<script type="text/html" id="bar_opt">
+    <a class="layui-btn layui-btn-xs" lay-event="predownload">离线下载</a>
+</script>
+<script type="text/html" id="bar_opt_download">
+    <a class="layui-btn layui-btn-warm layui-btn-xs" lay-event="download">下载</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="watch">观看</a>
+</script>
+<script>
+    layui.use(['jquery', 'laytpl', 'layer', 'table'], function () {
+        let $ = layui.$,
+            laytpl = layui.laytpl,
+            layer = layui.layer,
+            table = layui.table
+
+        $(function () {
+
+            let loadDownloadList = function () {
+                table.render({
+                    elem: '#table_list_download'
+                    , height: 312
+                    , url: '/downloadList'
+                    , response: {
+                        statusName: 'statusCode' //规定数据状态的字段名称，默认：code
+                        , statusCode: 200 //规定成功的状态码，默认：0
+                        , countName: 'total' //规定数据总数的字段名称，默认：count
+                        , dataName: 'list' //规定数据列表的字段名称，默认：data
+                    }
+                    , page: false
+                    , cols: [[ //表头
+                        {field: 'name', title: '文件名', sort: true, fixed: 'left'}
+                        , {
+                            field: 'percent', title: '是否完成', width: 120,
+                            templet: function (row) {
+                                if (parseInt(row.percent) === 1) {
+                                    return '<font color="green">完成</font>'
+                                } else {
+                                    return `<font color="#ff8c00">下载中${row.percentStr}</font>`
+                                }
+                            }
+                        }
+                        , {fixed: 'right', title: '操作', toolbar: '#bar_opt_download', width: 120}
+                    ]]
+                })
+
+                table.on('tool(table_list_download_filter)', function (obj) {
+                    let data = obj.data;
+                    if (obj.event === 'download') {
+                        window.open(`/downloadLocal/${data.name}`)
+                    } else if (obj.event === 'watch') {
+                        window.open(`/watch?name=${data.name}`)
+                    }
+                })
+            }
+
+            // 加载离线下载列表
+            loadDownloadList()
+            let fetchList = function () {
+                let url = $('#input_url').val()
+                $('#hidden_url').val(url)
+                $('#btn_list').addClass('layui-btn-disabled')
+                table.render({
+                    elem: '#table_list'
+                    , height: 312
+                    , url: '/list'
+                    , where: {url: url}
+                    , response: {
+                        statusName: 'statusCode' //规定数据状态的字段名称，默认：code
+                        , statusCode: 200 //规定成功的状态码，默认：0
+                        , msgName: 'message' //规定状态信息的字段名称，默认：msg
+                        , countName: 'total' //规定数据总数的字段名称，默认：count
+                        , dataName: 'list' //规定数据列表的字段名称，默认：data
+                    }
+                    , page: false
+                    , cols: [[ //表头
+                        {field: 'num', title: '编号', width: 80, sort: true, fixed: 'left'}
+                        , {field: 'format', title: '格式', width: 120}
+                        , {field: 'resolution', title: '分辨率', width: 120, sort: true}
+                        , {field: 'size', title: '大小/MB', sort: true}
+                        , {fixed: 'right', title: '操作', toolbar: '#bar_opt', width: 100}
+                    ]],
+                    done: function(res, curr, count){
+                        $('#btn_list').removeClass('layui-btn-disabled')
+                    }
+                })
+
+                table.on('tool(table_list_filter)', function (obj) {
+                    let data = obj.data;
+                    let loadIndex = layer.load()
+                    if (obj.event === 'predownload') {
+                        $.ajax({
+                            type: 'GET',
+                            url: '/predownload',
+                            data: {
+                                url: $('#hidden_url').val(),
+                                num: data.num,
+                                resolution: data.resolution
+                            },
+                            success: function (data) {
+                                if (data.statusCode === 200) {
+                                    layer.msg('已加入到离线下载队列，刷新查看。')
+                                } else {
+                                    layer.msg(data.message)
+                                }
+                                layer.close(loadIndex)
+                            }
+                        })
+                    }
+                })
+            }
+
+            $('#btn_list').on('click', function () {
+                fetchList()
+            })
+
+
+        })
+    })
+</script>
+</html>
